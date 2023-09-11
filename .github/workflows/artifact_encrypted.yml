@@ -1,0 +1,46 @@
+name: Artifact Encrypted
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Artifact"]
+    types:
+      - completed
+
+jobs:
+  artifact_encrypted:
+    runs-on: ubuntu-latest
+    name: Artifact Encrypted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Download Encrypted Artifact & Decrypt Artifact
+        uses: badgerhobbs/terraform-state@v1
+        with:
+          encryption_key: ${{ secrets.encryption_key }}
+          operation: download
+          location: artifact
+          github_token: ${{ secrets.gh_access_token }}
+        continue-on-error: true
+
+      - name: Configure Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Initialize Terraform
+        run: terraform init
+
+      - name: Run Terraform Plan
+        run: |
+          terraform plan -var="run_id=${{ github.run_id }}"
+
+      - name: Run Terraform Apply
+        run: |
+          terraform apply -auto-approve -var="run_id=${{ github.run_id }}"
+
+      - name: Encrypt Artifact & Upload Encrypted Artifact
+        uses: badgerhobbs/terraform-state@v1
+        with:
+          encryption_key: ${{ secrets.encryption_key }}
+          operation: upload
+          location: artifact
+          github_token: ${{ secrets.gh_access_token }}

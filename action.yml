@@ -1,0 +1,119 @@
+name: "terraform-state"
+description: "Store Terraform state for your GitHub Actions as an encrypted artifact or repository file."
+author: "Andrew Riggs"
+
+inputs:
+  encryption_key:
+    description: "AES-256 Encryption key used to encrypt/decrypt the Terraform state file."
+    required: false
+
+  operation:
+    description: "Specifies if the operation is to download or upload the Terraform state file. [Options: download/upload]"
+    required: true
+
+  location:
+    description: "Specifies the storage location of the Terraform state file. [Options: repository/artifact]"
+    required: true
+
+  directory:
+    description: "Directory of the Terraform state file."
+    required: false
+    default: "."
+
+  github_token:
+    description: "GitHub Access Token used to retrieve latest artifact."
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Configure Git User
+      shell: bash
+      run: |
+        git config --global user.name "terraform-state"
+        git config --global user.email "github-actions@users.noreply.github.com"
+
+    # Artifact
+    - name: Download Artifact
+      if: "${{ inputs.location == 'artifact' && inputs.operation == 'download' && inputs.encryption_key == '' }}"
+      shell: bash
+      run: |
+        REPO="${{ github.repository }}"
+        ARTIFACT_URI="https://api.github.com/repos/$REPO/actions/artifacts"
+        TOKEN="${{ inputs.github_token }}"
+        RESPONSE=$(curl -H "Authorization: token $TOKEN" -s $ARTIFACT_URI | jq -r '.artifacts[]')
+        if [ "$RESPONSE" ] ; then
+          LATEST_ARTIFACT_URI=$(echo $RESPONSE | jq -r 'select(.name=="Terraform State") | .archive_download_url' | sort -r | head -n 1)
+          if [ "$LATEST_ARTIFACT_URI" ] ; then
+            curl -L -H "Authorization: token $TOKEN" -o ${{ inputs.directory }}/terraform.tfstate.zip $LATEST_ARTIFACT_URI
+            unzip -o ${{ inputs.directory }}/terraform.tfstate.zip -d ${{ inputs.directory }}
+          fi
+        fi
+
+    - name: Upload Artifact
+      if: "${{ inputs.location == 'artifact' && inputs.operation == 'upload' && inputs.encryption_key == '' }}"
+      uses: actions/upload-artifact@v3
+      with:
+        name: Terraform State
+        path: "${{ inputs.directory }}/terraform.tfstate"
+
+    # Encrypted Artifact
+    - name: Download Encrypted Artifact
+      if: "${{ inputs.location == 'artifact' && inputs.operation == 'download' && inputs.encryption_key != '' }}"
+      shell: bash
+      run: |
+        REPO="${{ github.repository }}"
+        ARTIFACT_URI="https://api.github.com/repos/$REPO/actions/artifacts"
+        TOKEN="${{ inputs.github_token }}"
+        RESPONSE=$(curl -H "Authorization: token $TOKEN" -s $ARTIFACT_URI | jq -r '.artifacts[]')
+        if [ "$RESPONSE" ] ; then
+          LATEST_ARTIFACT_URI=$(echo $RESPONSE | jq -r 'select(.name=="Encrypted Terraform State") | .archive_download_url' | sort -r | head -n 1)
+          if [ "$LATEST_ARTIFACT_URI" ] ; then
+            curl -L -H "Authorization: token $TOKEN" -o ${{ inputs.directory }}/terraform.tfstate.encrypted.zip $LATEST_ARTIFACT_URI
+            unzip -o ${{ inputs.directory }}/terraform.tfstate.encrypted.zip -d ${{ inputs.directory }}
+          fi
+        fi
+
+    - name: Decrypt Artifact
+      if: "${{ inputs.location == 'artifact' && inputs.operation == 'download' && inputs.encryption_key != '' }}"
+      shell: bash
+      run: |
+        openssl enc -d -aes256 -in ${{ inputs.directory }}/terraform.tfstate.encrypted -out ${{ inputs.directory }}/terraform.tfstate -k ${{ inputs.encryption_key }}
+
+    - name: Encrypt Artifact
+      if: "${{ inputs.location == 'artifact' && inputs.operation == 'upload' && inputs.encryption_key != '' }}"
+      shell: bash
+      run: |
+        openssl enc -e -aes256 -in ${{ inputs.directory }}/terraform.tfstate -out ${{ inputs.directory }}/terraform.tfstate.encrypted -k ${{ inputs.encryption_key }}
+
+    - name: Upload Encrypted Artifact
+      if: "${{ inputs.location == 'artifact' && inputs.operation == 'upload' && inputs.encryption_key != '' }}"
+      uses: actions/upload-artifact@v3
+      with:
+        name: Encrypted Terraform State
+        path: "${{ inputs.directory }}/terraform.tfstate.encrypted"
+
+    # Repository File
+    - name: Commit Repository File
+      if: "${{ inputs.location == 'repository' && inputs.operation == 'upload' && inputs.encryption_key == '' }}"
+      shell: bash
+      run: |
+        git add ${{ inputs.directory }}/terraform.tfstate
+        git commit -m "🏗️ Automatically Updated Terraform State."
+        git push
+
+    # Encrypted Repository File
+    - name: Decrypt Repository File
+      if: "${{ inputs.location == 'repository' && inputs.operation == 'download' && inputs.encryption_key != '' }}"
+      shell: bash
+      run: |
+        openssl enc -d -aes256 -in ${{ inputs.directory }}/terraform.tfstate.encrypted -out ${{ inputs.directory }}/terraform.tfstate -k ${{ inputs.encryption_key }}
+
+    - name: Encrypt and Commit Repository File
+      if: "${{ inputs.location == 'repository' && inputs.operation == 'upload' && inputs.encryption_key != '' }}"
+      shell: bash
+      run: |
+        openssl enc -e -aes256 -in ${{ inputs.directory }}/terraform.tfstate -out ${{ inputs.directory }}/terraform.tfstate.encrypted -k ${{ inputs.encryption_key }}
+        git add ${{ inputs.directory }}/terraform.tfstate.encrypted
+        git commit -m "🏗️ Automatically Updated Encrypted Terraform State."
+        git push
