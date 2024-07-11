@@ -12,12 +12,12 @@ jobs:
     name: Repository File Encrypted
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.gh_access_token }}
 
       - name: Decrypt Repository File
-        uses: badgerhobbs/terraform-state@v1
+        uses: badgerhobbs/terraform-state@v2
         with:
           encryption_key: ${{ secrets.encryption_key }}
           operation: download
@@ -25,7 +25,7 @@ jobs:
         continue-on-error: true
 
       - name: Configure Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
 
       - name: Initialize Terraform
         run: terraform init
@@ -44,7 +44,7 @@ jobs:
           ls -R
 
       - name: Encrypt and Commit Repository File
-        uses: badgerhobbs/terraform-state@v1
+        uses: badgerhobbs/terraform-state@v2
         with:
           encryption_key: ${{ secrets.encryption_key }}
           operation: upload
