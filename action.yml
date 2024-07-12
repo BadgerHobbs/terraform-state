@@ -52,10 +52,11 @@ runs:
 
     - name: Upload Artifact
       if: "${{ inputs.location == 'artifact' && inputs.operation == 'upload' && inputs.encryption_key == '' }}"
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Terraform State
         path: "${{ inputs.directory }}/terraform.tfstate"
+        overwrite: true
 
     # Encrypted Artifact
     - name: Download Encrypted Artifact
@@ -88,10 +89,11 @@ runs:
 
     - name: Upload Encrypted Artifact
       if: "${{ inputs.location == 'artifact' && inputs.operation == 'upload' && inputs.encryption_key != '' }}"
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Encrypted Terraform State
         path: "${{ inputs.directory }}/terraform.tfstate.encrypted"
+        overwrite: true
 
     # Repository File
     - name: Commit Repository File

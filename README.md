@@ -24,11 +24,11 @@ It is recommended to use GitHub secrets to store the `encryption_key` and `githu
 
 ### Usage
 
-The following examples illustrates the best practices to use `terraform-state` to handle various scenarios of uploading and downloading a Terraform state file.
+The following examples illustrate the best practices to use `terraform-state` to handle various scenarios of uploading and downloading a Terraform state file.
 
 In addition, please note that while storing encrypted state within the repository ensures reasonable security, it is not recommended specifically for public repositories. Preferably, you should use artifacts. However, keep in mind that artifacts by default only last 90 days (can be changed in the repository settings).
 
-When using storing the Terraform state within the repository, changes are commited to the current branch. To prevent endless loops when the GitHub Action is triggered to run on push, configure the following.
+When storing the Terraform state within the repository, changes are commited to the current branch. To prevent endless loops when the GitHub Action is triggered to run on push, configure the following.
 
 ```yml
 push:
@@ -39,11 +39,11 @@ push:
 
 #### Artifact
 
-Please see thie [Example Workflow](.github/workflows/artifact.yml).
+Please see this [Example Workflow](.github/workflows/artifact.yml).
 
 ```yml
 - name: Download Artifact
-    uses: badgerhobbs/terraform-state@v1
+    uses: badgerhobbs/terraform-state@v2
     with:
         operation: download
         location: artifact
@@ -51,7 +51,7 @@ Please see thie [Example Workflow](.github/workflows/artifact.yml).
     continue-on-error: true
 
 - name: Upload Artifact
-    uses: badgerhobbs/terraform-state@v1
+    uses: badgerhobbs/terraform-state@v2
     with:
         operation: upload
         location: artifact
@@ -60,11 +60,11 @@ Please see thie [Example Workflow](.github/workflows/artifact.yml).
 
 #### Artifact Encrypted
 
-Please see thie [Example Workflow](.github/workflows/artifact_encrypted.yml).
+Please see this [Example Workflow](.github/workflows/artifact_encrypted.yml).
 
 ```yml
 - name: Download Encrypted Artifact & Decrypt Artifact
-    uses: badgerhobbs/terraform-state@v1
+    uses: badgerhobbs/terraform-state@v2
     with:
         encryption_key: ${{ secrets.encryption_key }}
         operation: download
@@ -73,7 +73,7 @@ Please see thie [Example Workflow](.github/workflows/artifact_encrypted.yml).
     continue-on-error: true
 
 - name: Encrypt Artifact & Upload Encrypted Artifact
-    uses: badgerhobbs/terraform-state@v1
+    uses: badgerhobbs/terraform-state@v2
     with:
         encryption_key: ${{ secrets.encryption_key }}
         operation: upload
@@ -83,11 +83,11 @@ Please see thie [Example Workflow](.github/workflows/artifact_encrypted.yml).
 
 #### Repository File
 
-Please see thie [Example Workflow](.github/workflows/repository_file.yml).
+Please see this [Example Workflow](.github/workflows/repository_file.yml).
 
 ```yml
 - name: Commit Repository File
-    uses: badgerhobbs/terraform-state@v1
+    uses: badgerhobbs/terraform-state@v2
     with:
         operation: upload
         location: repository
@@ -95,11 +95,11 @@ Please see thie [Example Workflow](.github/workflows/repository_file.yml).
 
 #### Repository File Encrypted
 
-Please see thie [Example Workflow](.github/workflows/repository_file_encrypted.yml).
+Please see this [Example Workflow](.github/workflows/repository_file_encrypted.yml).
 
 ```yml
 - name: Decrypt Repository File
-    uses: badgerhobbs/terraform-state@v1
+    uses: badgerhobbs/terraform-state@v2
     with:
         encryption_key: ${{ secrets.encryption_key }}
         operation: download
@@ -107,7 +107,7 @@ Please see thie [Example Workflow](.github/workflows/repository_file_encrypted.y
     continue-on-error: true
 
 - name: Encrypt and Commit Repository File
-    uses: badgerhobbs/terraform-state@v1
+    uses: badgerhobbs/terraform-state@v2
     with:
         encryption_key: ${{ secrets.encryption_key }}
         operation: upload

@@ -12,10 +12,10 @@ jobs:
     name: Artifact
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Download Artifact
-        uses: badgerhobbs/terraform-state@v1
+        uses: badgerhobbs/terraform-state@v2
         with:
           operation: download
           location: artifact
@@ -23,7 +23,7 @@ jobs:
         continue-on-error: true
 
       - name: Configure Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
 
       - name: Initialize Terraform
         run: terraform init
@@ -37,7 +37,7 @@ jobs:
           terraform apply -auto-approve -var="run_id=${{ github.run_id }}"
 
       - name: Upload Artifact
-        uses: badgerhobbs/terraform-state@v1
+        uses: badgerhobbs/terraform-state@v2
         with:
           operation: upload
           location: artifact

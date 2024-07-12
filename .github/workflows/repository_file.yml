@@ -12,12 +12,12 @@ jobs:
     name: Repository File
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.gh_access_token }}
 
       - name: Configure Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
 
       - name: Initialize Terraform
         run: terraform init
@@ -36,7 +36,7 @@ jobs:
           ls -R
 
       - name: Commit Repository File
-        uses: badgerhobbs/terraform-state@v1
+        uses: badgerhobbs/terraform-state@v2
         with:
           operation: upload
           location: repository
