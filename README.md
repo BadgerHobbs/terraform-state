@@ -19,6 +19,7 @@ The following inputs are used by the GitHub Action.
 | location       | Specifies the storage location of the Terraform state file. Options: `repository`, `artifact`.              | True     | N/A     |
 | directory      | Directory of the Terraform state file.                                                                      | False    | "."     |
 | github_token   | GitHub Access Token used to retrieve latest artifact.                                                       | False    | N/A     |
+| branch         | Branch to read files from and commit them back to. Defaults to the branch the workflow runs on.                | False    | N/A     |
 
 It is recommended to use GitHub secrets to store the `encryption_key` and `github_token`.
 
@@ -34,7 +35,7 @@ When storing the Terraform state within the repository, changes are commited to 
 push:
   paths-ignore:
     - "**.tfstate"
-    - "**.tfstate.encrypted"
+    - "**.tfstate.enc"
 ```
 
 #### Artifact
@@ -113,6 +114,40 @@ Please see this [Example Workflow](.github/workflows/repository_file_encrypted.y
         operation: upload
         location: repository
 ```
+
+### Storing State On Another Branch
+
+By default the action reads and writes the files on the branch your workflow runs
+on. Set `branch` to keep the state on a dedicated branch instead — the download
+pulls the files from that branch and the upload commits them back to it, leaving
+your working branch untouched:
+
+```yml
+- name: Download Encrypted Terraform State From "terraform-state" Branch
+    uses: badgerhobbs/terraform-state@v2
+    with:
+        encryption_key: ${{ secrets.encryption_key }}
+        operation: download
+        location: repository
+        branch: terraform-state
+    continue-on-error: true
+
+- name: Encrypt and Commit Terraform State To "terraform-state" Branch
+    uses: badgerhobbs/terraform-state@v2
+    with:
+        encryption_key: ${{ secrets.encryption_key }}
+        operation: upload
+        location: repository
+        branch: terraform-state
+```
+
+The branch must already exist in the repository. When storing state this way you
+no longer need the `paths-ignore` push filter shown above, since commits land on
+a branch your workflows are not running on.
+
+Note: with `location: artifact` the `branch` input only filters *downloads*,
+because an artifact is always attached to the branch of the run that created it
+(uploads still attach to the current branch).
 
 ## Acknowledgments
 
